@@ -7,6 +7,14 @@ import (
 	"strings"
 )
 
+func initialize(program []int, noun, verb int) []int{
+	newProgram := make([]int, len(program))
+	copy(newProgram, program)
+	newProgram[1] = noun
+	newProgram[2] = verb
+	return newProgram
+}
+
 func Run(program []int) {
 	ip := 0
 	for {
@@ -39,8 +47,18 @@ func main() {
 	}
 
 	// replace position 1 with the value 12 and replace position 2 with the value 2
-	program[1] = 12
-	program[2] = 2
-	Run(program)
-	fmt.Printf("Part 1: %d", program[0])
+	part1Program := initialize(program, 12, 2)
+	Run(part1Program)
+	fmt.Printf("Part 1: %d\n", part1Program[0])
+
+	for noun := 0; noun < 100; noun++ {
+		for verb := 0; verb < 100; verb++ {
+			nvProgram := initialize(program, noun, verb)
+			Run(nvProgram)
+			if nvProgram[0] == 19690720 {
+				fmt.Printf("Part 2: %d\n", 100 * noun + verb)
+				break
+			}
+		}
+	}
 }
