@@ -28,7 +28,7 @@ type point struct {
 }
 
 func (p point) distance(o point) int {
-	return adventutil.Abs(p.x - o.x) + adventutil.Abs(p.y - o.y)
+	return adventutil.Abs(p.x-o.x) + adventutil.Abs(p.y-o.y)
 }
 
 func FindNearestIntersection(wires []Wire) int {
@@ -36,7 +36,7 @@ func FindNearestIntersection(wires []Wire) int {
 
 	for _, wire := range wires {
 		pointsInWire := make(map[point]bool)
-		currentPosition := point{0,0}
+		currentPosition := point{0, 0}
 		for _, pathComponent := range wire {
 			movementFunc := movementFunction(pathComponent.dir)
 			for i := 0; i < pathComponent.distance; i++ {
@@ -54,13 +54,46 @@ func FindNearestIntersection(wires []Wire) int {
 		if numWires == 1 {
 			continue
 		}
-		distanceToIntersection := point{0,0}.distance(p)
+		distanceToIntersection := point{0, 0}.distance(p)
 		if distanceToIntersection < minDistance {
 			minDistance = distanceToIntersection
 		}
 	}
 
 	return minDistance
+}
+
+func FindFirstIntersection(wire1, wire2 Wire) int {
+	wire1StepsToPoint := buildStepsToPoint(wire1)
+	wire2StepsToPoint := buildStepsToPoint(wire2)
+
+	minSteps := adventutil.MaxInt
+	for p, count := range wire1StepsToPoint {
+		w2Count, ok := wire2StepsToPoint[p]
+		if ok {
+			if count+w2Count < minSteps {
+				minSteps = count + w2Count
+			}
+		}
+	}
+
+	return minSteps
+}
+
+func buildStepsToPoint(wire Wire) map[point]int {
+	wirePoints := make(map[point]int)
+	step := 0
+	point := point{0, 0}
+	for _, pc := range wire {
+		for i := 0; i < pc.distance; i++ {
+			step++
+			point = movementFunction(pc.dir)(point)
+			if wirePoints[point] == 0 {
+				wirePoints[point] = step
+			}
+		}
+	}
+	return wirePoints
 }
 
 func movementFunction(direction Direction) func(point) point {
@@ -96,10 +129,14 @@ func main() {
 			dirString := string(pathComponentString[0])
 			var direction Direction
 			switch dirString {
-			case "U" : direction = U
-			case "D" : direction = D
-			case "L" : direction = L
-			case "R" : direction = R
+			case "U":
+				direction = U
+			case "D":
+				direction = D
+			case "L":
+				direction = L
+			case "R":
+				direction = R
 			}
 			distanceString := pathComponentString[1:]
 			distance, _ := strconv.Atoi(distanceString)
@@ -110,4 +147,7 @@ func main() {
 
 	distanceToClosestIntersection := FindNearestIntersection(wires)
 	fmt.Printf("Part 1: %d\n", distanceToClosestIntersection)
+
+	part2 := FindFirstIntersection(wires[0], wires[1])
+	fmt.Printf("Part 2: %d\n", part2)
 }

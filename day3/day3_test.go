@@ -38,3 +38,32 @@ func TestFindNearestIntersection(t *testing.T) {
 		}
 	}
 }
+
+func TestFindFirstIntersection(t *testing.T) {
+	tests := []struct {
+		wire1, wire2 Wire
+		expected     int
+	}{
+		{
+			Wire{{R, 8}, {U, 5}, {L, 5}, {D, 3},},
+			Wire{{U, 7}, {R, 6}, {D, 4}, {L, 4},}, //U7,R6,D4,L4
+			30,
+		},
+		{
+			Wire{{R, 75}, {D, 30}, {R, 83}, {U, 83}, {L, 12}, {D, 49}, {R, 71}, {U, 7}, {L, 72},},
+			Wire{{U, 62}, {R, 66}, {U, 55}, {R, 34}, {D, 71}, {R, 55}, {D, 58}, {R, 83},},
+			610,
+		},
+		{
+			Wire{{R, 98}, {U, 47}, {R, 26}, {D, 63}, {R, 33}, {U, 87}, {L, 62}, {D, 20}, {R, 33}, {U, 53}, {R, 51},},
+			Wire{{U, 98}, {R, 91}, {D, 20}, {R, 16}, {D, 67}, {R, 40}, {U, 7}, {R, 15}, {U, 6}, {R, 7}},
+			410,
+		},
+	}
+	for _, test := range tests {
+		result := FindFirstIntersection(test.wire1, test.wire2)
+		if result != test.expected {
+			t.Errorf("Nearest intersection %v %v expected %d got %d", test.wire1, test.wire2, test.expected, result)
+		}
+	}
+}
