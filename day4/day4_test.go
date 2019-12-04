@@ -20,3 +20,22 @@ func TestValidate(t *testing.T) {
 		}
 	}
 }
+
+func TestValidate2(t *testing.T) {
+	//112233 meets these criteria because the digits never decrease and all repeated digits are exactly two digits long.
+	//123444 no longer meets the criteria (the repeated 44 is part of a larger group of 444).
+	//111122 meets the criteria (even though 1 is repeated more than twice, it still contains a double 22).
+	tests := []struct{
+		password string
+		valid bool
+	}{
+		{"112233", true},
+		{"123444", false},
+		{"111122", true},
+	}
+	for _, test := range tests {
+		if Validate2(test.password) != test.valid {
+			t.Errorf("Failed check %s", test.password)
+		}
+	}
+}
