@@ -30,6 +30,14 @@ func Abs(x int) int {
 	return x
 }
 
+func Pow10(n int) int {
+	result := 1
+	for i := 1; i <= n; i++ {
+		result *= 10
+	}
+	return result
+}
+
 const MaxUint = ^uint(0)
 const MinUint = 0
 
