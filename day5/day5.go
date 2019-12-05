@@ -11,22 +11,24 @@ type Computer struct {
 	ops map[int]func([]int, int) int
 }
 
-func add(program []int, ip int) int {
-	//fmt.Println(program[ip:ip+4])
+func binaryFunc(program []int, ip int, operand func(int, int) int) int {
 	arg1 := getValue(program, ip, 1)
 	arg2 := getValue(program, ip, 2)
 	dest := program[ip+3]
-	//fmt.Printf("Setting %d to %d + %d\n", dest, arg1, arg2)
-	program[dest] = arg1 + arg2
+	program[dest] = operand(arg1, arg2)
 	return ip + 4
 }
 
+func add(program []int, ip int) int {
+	return binaryFunc(program, ip, func(i int, i2 int) int {
+		return i + i2
+	})
+}
+
 func multiply(program []int, ip int) int {
-	arg1 := getValue(program, ip, 1)
-	arg2 := getValue(program, ip, 2)
-	dest := program[ip+3]
-	program[dest] = arg1 * arg2
-	return ip + 4
+	return binaryFunc(program, ip, func(i int, i2 int) int {
+		return i * i2
+	})
 }
 
 func save(program []int, ip int) int {
@@ -43,50 +45,48 @@ func save(program []int, ip int) int {
 }
 
 func printFunc(program []int, ip int) int {
-	fmt.Println(program[ip:ip+2])
+	fmt.Println(program[ip : ip+2])
 	value := getValue(program, ip, 1)
 	fmt.Println(value)
 	return ip + 2
 }
 
-func jumpIfTrue(program []int, ip int) int {
+func jump(program []int, ip int, shouldJump func(int) bool) int {
 	arg1 := getValue(program, ip, 1)
-	if arg1 != 0 {
+	if shouldJump(arg1) {
 		return getValue(program, ip, 2)
 	}
 	return ip + 3
+}
+
+func jumpIfTrue(program []int, ip int) int {
+	return jump(program, ip, func(i int) bool {
+		return i != 0
+	})
 }
 
 func jumpIfFalse(program []int, ip int) int {
-	arg1 := getValue(program, ip, 1)
-	if arg1 == 0 {
-		return getValue(program, ip, 2)
-	}
-	return ip + 3
+	return jump(program, ip, func(i int) bool {
+		return i == 0
+	})
 }
 
 func lessThan(program []int, ip int) int {
-	arg1 := getValue(program, ip, 1)
-	arg2 := getValue(program, ip, 2)
-	dest := program[ip+3]
-	result := 0
-	if arg1 < arg2 {
-		result = 1
-	}
-	program[dest] = result
-	return ip + 4
+	return binaryFunc(program, ip, func(i int, i2 int) int {
+		if i < i2 {
+			return 1
+		}
+		return 0
+	})
 }
 
 func equals(program []int, ip int) int {
-	arg1 := getValue(program, ip, 1)
-	arg2 := getValue(program, ip, 2)
-	dest := program[ip+3]
-	result := 0
-	if arg1 == arg2 {
-		result = 1
-	}
-	program[dest] = result
-	return ip + 4
+	return binaryFunc(program, ip, func(i int, i2 int) int {
+		if i == i2 {
+			return 1
+		}
+		return 0
+	})
 }
 
 func getValue(program []int, ip, argNum int) int {
