@@ -12,11 +12,11 @@ type Computer struct {
 }
 
 func add(program []int, ip int) int {
-	fmt.Println(program[ip:ip+4])
+	//fmt.Println(program[ip:ip+4])
 	arg1 := getValue(program, ip, 1)
 	arg2 := getValue(program, ip, 2)
 	dest := program[ip+3]
-	fmt.Printf("Setting %d to %d + %d\n", dest, arg1, arg2)
+	//fmt.Printf("Setting %d to %d + %d\n", dest, arg1, arg2)
 	program[dest] = arg1 + arg2
 	return ip + 4
 }
@@ -30,7 +30,7 @@ func multiply(program []int, ip int) int {
 }
 
 func save(program []int, ip int) int {
-	fmt.Println(program[ip:ip+2])
+	//fmt.Println(program[ip:ip+2])
 	dest := program[ip+1]
 	var input int
 	fmt.Println("Enter input:")
@@ -47,6 +47,46 @@ func printFunc(program []int, ip int) int {
 	value := getValue(program, ip, 1)
 	fmt.Println(value)
 	return ip + 2
+}
+
+func jumpIfTrue(program []int, ip int) int {
+	arg1 := getValue(program, ip, 1)
+	if arg1 != 0 {
+		return getValue(program, ip, 2)
+	}
+	return ip + 3
+}
+
+func jumpIfFalse(program []int, ip int) int {
+	arg1 := getValue(program, ip, 1)
+	if arg1 == 0 {
+		return getValue(program, ip, 2)
+	}
+	return ip + 3
+}
+
+func lessThan(program []int, ip int) int {
+	arg1 := getValue(program, ip, 1)
+	arg2 := getValue(program, ip, 2)
+	dest := program[ip+3]
+	result := 0
+	if arg1 < arg2 {
+		result = 1
+	}
+	program[dest] = result
+	return ip + 4
+}
+
+func equals(program []int, ip int) int {
+	arg1 := getValue(program, ip, 1)
+	arg2 := getValue(program, ip, 2)
+	dest := program[ip+3]
+	result := 0
+	if arg1 == arg2 {
+		result = 1
+	}
+	program[dest] = result
+	return ip + 4
 }
 
 func getValue(program []int, ip, argNum int) int {
@@ -81,6 +121,10 @@ func main() {
 			2: multiply,
 			3: save,
 			4: printFunc,
+			5: jumpIfTrue,
+			6: jumpIfFalse,
+			7: lessThan,
+			8: equals,
 		},
 	}
 	//computer.Run([]int{3, 0, 4, 0, 99})
