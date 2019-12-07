@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/enjean/advent-of-code-2019/adventutil"
+	"github.com/enjean/advent-of-code-2019/internal/adventutil"
 	"strings"
 )
 
