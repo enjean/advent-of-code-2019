@@ -8,7 +8,7 @@ import (
 )
 
 func Parse(day int) []string {
-	file, err := os.Open(fmt.Sprintf("day%d/input.txt", day))
+	file, err := os.Open(fmt.Sprintf("cmd/day%d/input.txt", day))
 	if err != nil {
 		log.Fatal(err)
 	}
