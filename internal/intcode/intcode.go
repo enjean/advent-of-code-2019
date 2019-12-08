@@ -1,18 +1,30 @@
 package intcode
 
 import (
-	"fmt"
 	"github.com/enjean/advent-of-code-2019/internal/adventutil"
+	"strconv"
+	"strings"
 )
 
+func ParseProgram(programString string) []int {
+	partsStrings := strings.Split(programString, ",")
+	var program []int
+	for _, partString := range partsStrings {
+		asInt, _ := strconv.Atoi(partString)
+		program = append(program, asInt)
+	}
+	return program
+}
+
 type Computer struct {
+	name   string
 	ops    map[int]func(Computer, []int, int) int
 	Input  chan int
 	Output chan int
 }
 
-func CreateComputer(ops map[int]func(Computer, []int, int) int) Computer {
-	return Computer{ops, make(chan int), make(chan int)}
+func CreateComputer(name string, ops map[int]func(Computer, []int, int) int) Computer {
+	return Computer{name, ops, make(chan int), make(chan int)}
 }
 
 func binaryFunc(program []int, ip int, operand func(int, int) int) int {
@@ -39,6 +51,7 @@ func Save(c Computer, program []int, ip int) int {
 	//fmt.Println(program[ip:ip+2])
 	dest := program[ip+1]
 	input := <-c.Input
+	//fmt.Printf("%s received input %d\n", c.name, input)
 	program[dest] = input
 	return ip + 2
 }
@@ -101,15 +114,18 @@ func isImmediateMode(opcode, argNum int) bool {
 }
 
 func (c Computer) Run(program []int) {
+	executable := make([]int, len(program))
+	copy(executable, program)
+
 	ip := 0
 	for {
-		opcode := program[ip] % 100
-		fmt.Printf("IP %d op %d\n", ip, program[ip])
+		opcode := executable[ip] % 100
+		//fmt.Printf("%s IP %d op %d %v\n", c.name, ip, executable[ip], executable)
 		if opcode == 99 {
 			close(c.Input)
 			close(c.Output)
 			break
 		}
-		ip = c.ops[opcode](c, program, ip)
+		ip = c.ops[opcode](c, executable, ip)
 	}
 }

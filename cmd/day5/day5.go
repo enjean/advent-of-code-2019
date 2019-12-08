@@ -4,15 +4,10 @@ import (
 	"fmt"
 	"github.com/enjean/advent-of-code-2019/internal/adventutil"
 	"github.com/enjean/advent-of-code-2019/internal/intcode"
-	"strconv"
-	"strings"
 )
 
 func ExecuteProgramWithInput(program []int, input int) []int {
-	executable := make([]int, len(program))
-	copy(executable, program)
-
-	computer := intcode.CreateComputer(map[int]func(intcode.Computer, []int, int) int{
+	computer := intcode.CreateComputer("", map[int]func(intcode.Computer, []int, int) int{
 		1: intcode.Add,
 		2: intcode.Multiply,
 		3: intcode.Save,
@@ -24,7 +19,7 @@ func ExecuteProgramWithInput(program []int, input int) []int {
 	})
 
 	go func() { computer.Input <- input }()
-	go func() { computer.Run(executable) }()
+	go func() { computer.Run(program) }()
 
 	var outputs []int
 	for output := range computer.Output {
@@ -34,13 +29,7 @@ func ExecuteProgramWithInput(program []int, input int) []int {
 }
 
 func main() {
-	programString := adventutil.Parse(5)[0]
-	partsStrings := strings.Split(programString, ",")
-	var program []int
-	for _, partString := range partsStrings {
-		asInt, _ := strconv.Atoi(partString)
-		program = append(program, asInt)
-	}
+	program := intcode.ParseProgram(adventutil.Parse(5)[0])
 
 	part1Outputs := ExecuteProgramWithInput(program, 1)
 	fmt.Printf("Part 1: %v\n", part1Outputs)
