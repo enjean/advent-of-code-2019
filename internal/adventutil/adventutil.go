@@ -30,8 +30,8 @@ func Abs(x int) int {
 	return x
 }
 
-func Pow10(n int) int {
-	result := 1
+func Pow10(n int) int64 {
+	result := int64(1)
 	for i := 1; i <= n; i++ {
 		result *= 10
 	}

@@ -6,8 +6,8 @@ import (
 	"github.com/enjean/advent-of-code-2019/internal/intcode"
 )
 
-func ExecuteProgramWithInput(program []int, input int) []int {
-	computer := intcode.CreateComputer("", map[int]func(intcode.Computer, []int, int) int{
+func ExecuteProgramWithInput(program []intcode.IPType, input int) []int {
+	computer := intcode.CreateComputer("", map[int]intcode.Instruction{
 		1: intcode.Add,
 		2: intcode.Multiply,
 		3: intcode.Save,
@@ -18,12 +18,12 @@ func ExecuteProgramWithInput(program []int, input int) []int {
 		8: intcode.Equals,
 	})
 
-	go func() { computer.Input <- input }()
+	go func() { computer.Input <- intcode.IPType(input) }()
 	go func() { computer.Run(program) }()
 
 	var outputs []int
 	for output := range computer.Output {
-		outputs = append(outputs, output)
+		outputs = append(outputs, int(output))
 	}
 	return outputs
 }

@@ -6,29 +6,33 @@ import (
 	"strings"
 )
 
-func ParseProgram(programString string) []int {
+type IPType int64
+type memory map[IPType]IPType
+type Instruction func(Computer, memory, IPType) IPType
+
+func ParseProgram(programString string) []IPType {
 	partsStrings := strings.Split(programString, ",")
-	var program []int
+	var program []IPType
 	for _, partString := range partsStrings {
-		asInt, _ := strconv.Atoi(partString)
-		program = append(program, asInt)
+		asInt, _ := strconv.ParseInt(partString, 10, 64)
+		program = append(program, IPType(asInt))
 	}
 	return program
 }
 
 type Computer struct {
 	name    string
-	ops     map[int]func(Computer, []int, int) int
-	Input   chan int
-	Output  chan int
+	ops     map[int]Instruction
+	Input   chan IPType
+	Output  chan IPType
 	Stopped chan struct{}
 }
 
-func CreateComputer(name string, ops map[int]func(Computer, []int, int) int) Computer {
-	return Computer{name, ops, make(chan int), make(chan int), make(chan struct{})}
+func CreateComputer(name string, ops map[int]Instruction) Computer {
+	return Computer{name, ops, make(chan IPType), make(chan IPType), make(chan struct{})}
 }
 
-func binaryFunc(program []int, ip int, operand func(int, int) int) int {
+func binaryFunc(program memory, ip IPType, operand func(IPType, IPType) IPType) IPType {
 	arg1 := getValue(program, ip, 1)
 	arg2 := getValue(program, ip, 2)
 	dest := program[ip+3]
@@ -36,19 +40,19 @@ func binaryFunc(program []int, ip int, operand func(int, int) int) int {
 	return ip + 4
 }
 
-func Add(c Computer, program []int, ip int) int {
-	return binaryFunc(program, ip, func(i int, i2 int) int {
+func Add(c Computer, program memory, ip IPType) IPType {
+	return binaryFunc(program, ip, func(i IPType, i2 IPType) IPType {
 		return i + i2
 	})
 }
 
-func Multiply(c Computer, program []int, ip int) int {
-	return binaryFunc(program, ip, func(i int, i2 int) int {
+func Multiply(c Computer, program memory, ip IPType) IPType {
+	return binaryFunc(program, ip, func(i IPType, i2 IPType) IPType {
 		return i * i2
 	})
 }
 
-func Save(c Computer, program []int, ip int) int {
+func Save(c Computer, program memory, ip IPType) IPType {
 	//fmt.Println(program[ip:ip+2])
 	dest := program[ip+1]
 	input := <-c.Input
@@ -57,14 +61,14 @@ func Save(c Computer, program []int, ip int) int {
 	return ip + 2
 }
 
-func PrintFunc(c Computer, program []int, ip int) int {
+func PrintFunc(c Computer, program memory, ip IPType) IPType {
 	value := getValue(program, ip, 1)
 	//fmt.Printf("%s output %d\n", c.name, value)
 	c.Output <- value
 	return ip + 2
 }
 
-func jump(program []int, ip int, shouldJump func(int) bool) int {
+func jump(program memory, ip IPType, shouldJump func(IPType) bool) IPType {
 	arg1 := getValue(program, ip, 1)
 	if shouldJump(arg1) {
 		return getValue(program, ip, 2)
@@ -72,20 +76,20 @@ func jump(program []int, ip int, shouldJump func(int) bool) int {
 	return ip + 3
 }
 
-func JumpIfTrue(c Computer, program []int, ip int) int {
-	return jump(program, ip, func(i int) bool {
+func JumpIfTrue(c Computer, program memory, ip IPType) IPType {
+	return jump(program, ip, func(i IPType) bool {
 		return i != 0
 	})
 }
 
-func JumpIfFalse(c Computer, program []int, ip int) int {
-	return jump(program, ip, func(i int) bool {
+func JumpIfFalse(c Computer, program memory, ip IPType) IPType {
+	return jump(program, ip, func(i IPType) bool {
 		return i == 0
 	})
 }
 
-func LessThan(c Computer, program []int, ip int) int {
-	return binaryFunc(program, ip, func(i int, i2 int) int {
+func LessThan(c Computer, program memory, ip IPType) IPType {
+	return binaryFunc(program, ip, func(i IPType, i2 IPType) IPType {
 		if i < i2 {
 			return 1
 		}
@@ -93,8 +97,8 @@ func LessThan(c Computer, program []int, ip int) int {
 	})
 }
 
-func Equals(c Computer, program []int, ip int) int {
-	return binaryFunc(program, ip, func(i int, i2 int) int {
+func Equals(c Computer, program memory, ip IPType) IPType {
+	return binaryFunc(program, ip, func(i IPType, i2 IPType) IPType {
 		if i == i2 {
 			return 1
 		}
@@ -102,26 +106,28 @@ func Equals(c Computer, program []int, ip int) int {
 	})
 }
 
-func getValue(program []int, ip, argNum int) int {
+func getValue(program memory, ip IPType, argNum int) IPType {
 	opcode := program[ip]
-	argValue := program[ip+argNum]
+	argValue := program[ip+IPType(argNum)]
 	if isImmediateMode(opcode, argNum) {
 		return argValue
 	}
 	return program[argValue]
 }
 
-func isImmediateMode(opcode, argNum int) bool {
-	return (opcode/(adventutil.Pow10(argNum+1)))%10 == 1
+func isImmediateMode(opcode IPType, argNum int) bool {
+	return (opcode/(IPType(adventutil.Pow10(argNum+1))))%10 == 1
 }
 
-func (c Computer) Run(program []int) {
-	executable := make([]int, len(program))
-	copy(executable, program)
+func (c Computer) Run(program []IPType) {
+	memory := make(memory)
+	for i, val := range program {
+		memory[IPType(i)] = IPType(val)
+	}
 
-	ip := 0
+	ip := IPType(0)
 	for {
-		opcode := executable[ip] % 100
+		opcode := int(memory[ip] % 100)
 		//fmt.Printf("%s IP %d op %d %v\n", c.name, ip, executable[ip], executable)
 		if opcode == 99 {
 			//fmt.Println(c.name + " ending")
@@ -129,6 +135,6 @@ func (c Computer) Run(program []int) {
 			close(c.Stopped)
 			break
 		}
-		ip = c.ops[opcode](c, executable, ip)
+		ip = c.ops[opcode](c, memory, ip)
 	}
 }

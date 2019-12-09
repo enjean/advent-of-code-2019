@@ -1,9 +1,12 @@
 package main
 
-import "testing"
+import (
+	"github.com/enjean/advent-of-code-2019/internal/intcode"
+	"testing"
+)
 
 func TestExecuteProgramWithInput(t *testing.T) {
-	program := []int{3, 0, 4, 0, 99}
+	program := []intcode.IPType{3, 0, 4, 0, 99}
 	input := 987
 
 	result := ExecuteProgramWithInput(program, input)

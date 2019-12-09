@@ -6,13 +6,13 @@ import (
 	"github.com/enjean/advent-of-code-2019/internal/intcode"
 )
 
-func CalculateThrusterSignal(phases [5]int, program []int) int {
+func CalculateThrusterSignal(phases [5]int, program []intcode.IPType) int {
 	outputToThruster := make(chan int)
 
 	var amplifiers [5]intcode.Computer
 	for i := 0; i < 5; i++ {
 		amplifiers[i] = intcode.CreateComputer(fmt.Sprintf("%d", i),
-			map[int]func(intcode.Computer, []int, int) int{
+			map[int]intcode.Instruction{
 				1: intcode.Add,
 				2: intcode.Multiply,
 				3: intcode.Save,
@@ -25,7 +25,7 @@ func CalculateThrusterSignal(phases [5]int, program []int) int {
 	}
 	for i := 0; i < 5; i++ {
 		go func(ampIndex int) {
-			amplifiers[ampIndex].Input <- phases[ampIndex]
+			amplifiers[ampIndex].Input <- intcode.IPType(phases[ampIndex])
 			if ampIndex == 0 {
 				amplifiers[ampIndex].Input <- 0
 			}
@@ -33,7 +33,7 @@ func CalculateThrusterSignal(phases [5]int, program []int) int {
 			if ampIndex == 0 {
 				inputAmplifier = 4
 			}
-			var output int
+			var output intcode.IPType
 			for val := range amplifiers[inputAmplifier].Output {
 				if inputAmplifier == 4 {
 					output = val
@@ -44,7 +44,7 @@ func CalculateThrusterSignal(phases [5]int, program []int) int {
 				}
 			}
 			if inputAmplifier == 4 {
-				outputToThruster <- output
+				outputToThruster <- int(output)
 			}
 		}(i)
 		go func(j int) {
@@ -56,7 +56,7 @@ func CalculateThrusterSignal(phases [5]int, program []int) int {
 	return <-outputToThruster
 }
 
-func OptimalThrusterSignal(program []int, minPhase int) ([5]int, int) {
+func OptimalThrusterSignal(program []intcode.IPType, minPhase int) ([5]int, int) {
 	phaserPermutations := generatePermutations(minPhase)
 
 	var maxPhaserSetting [5]int
