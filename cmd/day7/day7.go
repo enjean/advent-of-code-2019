@@ -7,6 +7,8 @@ import (
 )
 
 func CalculateThrusterSignal(phases [5]int, program []int) int {
+	outputToThruster := make(chan int)
+
 	var amplifiers [5]intcode.Computer
 	for i := 0; i < 5; i++ {
 		amplifiers[i] = intcode.CreateComputer(fmt.Sprintf("%d", i),
@@ -20,31 +22,42 @@ func CalculateThrusterSignal(phases [5]int, program []int) int {
 				7: intcode.LessThan,
 				8: intcode.Equals,
 			})
-
+	}
+	for i := 0; i < 5; i++ {
 		go func(ampIndex int) {
 			amplifiers[ampIndex].Input <- phases[ampIndex]
 			if ampIndex == 0 {
 				amplifiers[ampIndex].Input <- 0
 			}
-			if ampIndex != 0 {
-				for val := range amplifiers[ampIndex-1].Output {
-					amplifiers[ampIndex].Input <- val
+			inputAmplifier := ampIndex - 1
+			if ampIndex == 0 {
+				inputAmplifier = 4
+			}
+			var output int
+			for val := range amplifiers[inputAmplifier].Output {
+				if inputAmplifier == 4 {
+					output = val
+				}
+				select {
+				case amplifiers[ampIndex].Input <- val:
+				case <-amplifiers[ampIndex].Stopped:
 				}
 			}
+			if inputAmplifier == 4 {
+				outputToThruster <- output
+			}
 		}(i)
-
 		go func(j int) {
 			amplifiers[j].Run(program)
 			//fmt.Printf("%d done\n", j)
 		}(i)
 	}
 
-	return <-amplifiers[4].Output
+	return <-outputToThruster
 }
 
-func OptimalThrusterSignal(program []int) ([5]int, int) {
-	phaserPossibilities := [5]int{0, 1, 2, 3, 4}
-	phaserPermutations := generatePermutations(5, phaserPossibilities)
+func OptimalThrusterSignal(program []int, minPhase int) ([5]int, int) {
+	phaserPermutations := generatePermutations(minPhase)
 
 	var maxPhaserSetting [5]int
 	maxThruster := 0
@@ -59,26 +72,26 @@ func OptimalThrusterSignal(program []int) ([5]int, int) {
 	return maxPhaserSetting, maxThruster
 }
 
-func generatePermutations(k int, A [5]int) [][5]int {
+func generatePermutations(min int) [][5]int {
 	var permutations [][5]int
-	for a := 0; a<5; a++ {
-		for b := 0; b<5;b++ {
-			if a==b {
+	for a := min; a < min+5; a++ {
+		for b := min; b < min+5; b++ {
+			if a == b {
 				continue
 			}
-			for c:=0;c<5;c++ {
-				if c==a || c==b {
+			for c := min; c < min+5; c++ {
+				if c == a || c == b {
 					continue
 				}
-				for d:=0; d<5;d++{
-					if d==a||d==b||d==c {
+				for d := min; d < min+5; d++ {
+					if d == a || d == b || d == c {
 						continue
 					}
-					for e:=0;e<5;e++ {
-						if e==a||e==b||e==c||e==d {
+					for e := min; e < min+5; e++ {
+						if e == a || e == b || e == c || e == d {
 							continue
 						}
-						permutations = append(permutations, [5]int{a,b,c,d,e})
+						permutations = append(permutations, [5]int{a, b, c, d, e})
 					}
 				}
 			}
@@ -111,6 +124,9 @@ func generatePermutations(k int, A [5]int) [][5]int {
 func main() {
 	program := intcode.ParseProgram(adventutil.Parse(7)[0])
 
-	_, part1 := OptimalThrusterSignal(program)
+	_, part1 := OptimalThrusterSignal(program, 0)
 	fmt.Printf("Part 1: %d \n", part1)
+
+	_, part2 := OptimalThrusterSignal(program, 5)
+	fmt.Printf("Part 2: %d \n", part2)
 }

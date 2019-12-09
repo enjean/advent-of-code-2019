@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -26,22 +27,37 @@ func TestCalculateThrusterSignal(t *testing.T) {
 				1002, 33, 7, 33, 1, 33, 31, 31, 1, 32, 31, 31, 4, 31, 99, 0, 0, 0},
 			65210,
 		},
+		{
+			[5]int{9, 8, 7, 6, 5},
+			[]int{3, 26, 1001, 26, -4, 26, 3, 27, 1002, 27, 2, 27, 1, 27, 26,
+				27, 4, 27, 1001, 28, -1, 28, 1005, 28, 6, 99, 0, 0, 5},
+			139629729,
+		},
+		{
+			[5]int{9, 7, 8, 5, 6},
+			[]int{3, 52, 1001, 52, -5, 52, 3, 53, 1, 52, 56, 54, 1007, 54, 5, 55, 1005, 55, 26, 1001, 54,
+				-5, 54, 1105, 1, 12, 1, 53, 54, 53, 1008, 54, 0, 55, 1001, 55, 1, 55, 2, 53, 55, 53, 4,
+				53, 1001, 56, -1, 56, 1005, 56, 6, 99, 0, 0, 0, 0, 10},
+			18216,
+		},
 	}
 
 	for _, test := range tests {
 		//fmt.Printf("********* Test %d\n", test.expected)
-		result := CalculateThrusterSignal(test.phases, test.program)
-		if result != test.expected {
-			t.Errorf("Expected %d, got %d", test.expected, result)
-		}
+		t.Run(fmt.Sprintf("%d", test.expected), func(t *testing.T) {
+			result := CalculateThrusterSignal(test.phases, test.program)
+			if result != test.expected {
+				t.Errorf("Expected %d, got %d", test.expected, result)
+			}
+		})
 	}
 }
 
-func TestOptimalThrusterSignal(t *testing.T) {
+func TestOptimalThrusterSignalPart1(t *testing.T) {
 	tests := []struct {
-		program  []int
-		expectedPhases   [5]int
-		expected int
+		program        []int
+		expectedPhases [5]int
+		expected       int
 	}{
 		{
 			[]int{3, 15, 3, 16, 1002, 16, 10, 16, 1, 16, 15, 15, 4, 15, 99, 0, 0},
@@ -63,7 +79,38 @@ func TestOptimalThrusterSignal(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			phases, thruster := OptimalThrusterSignal(test.program)
+			phases, thruster := OptimalThrusterSignal(test.program, 0)
+			if phases != test.expectedPhases && thruster != test.expected {
+				t.Errorf("Expected %d for %v, got %v %d", test.expected, test.expectedPhases, phases, thruster)
+			}
+		})
+	}
+}
+
+func TestOptimalThrusterSignalPart2(t *testing.T) {
+	tests := []struct {
+		program        []int
+		expectedPhases [5]int
+		expected       int
+	}{
+		{
+			[]int{3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,
+				27,4,27,1001,28,-1,28,1005,28,6,99,0,0,5},
+			[5]int{9,8,7,6,5},
+			139629729,
+		},
+		{
+			[]int{3,52,1001,52,-5,52,3,53,1,52,56,54,1007,54,5,55,1005,55,26,1001,54,
+				-5,54,1105,1,12,1,53,54,53,1008,54,0,55,1001,55,1,55,2,53,55,53,4,
+				53,1001,56,-1,56,1005,56,6,99,0,0,0,0,10},
+			[5]int{9,7,8,5,6},
+			18216,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			phases, thruster := OptimalThrusterSignal(test.program, 5)
 			if phases != test.expectedPhases && thruster != test.expected {
 				t.Errorf("Expected %d for %v, got %v %d", test.expected, test.expectedPhases, phases, thruster)
 			}

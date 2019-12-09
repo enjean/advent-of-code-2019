@@ -17,14 +17,15 @@ func ParseProgram(programString string) []int {
 }
 
 type Computer struct {
-	name   string
-	ops    map[int]func(Computer, []int, int) int
-	Input  chan int
-	Output chan int
+	name    string
+	ops     map[int]func(Computer, []int, int) int
+	Input   chan int
+	Output  chan int
+	Stopped chan struct{}
 }
 
 func CreateComputer(name string, ops map[int]func(Computer, []int, int) int) Computer {
-	return Computer{name, ops, make(chan int), make(chan int)}
+	return Computer{name, ops, make(chan int), make(chan int), make(chan struct{})}
 }
 
 func binaryFunc(program []int, ip int, operand func(int, int) int) int {
@@ -58,6 +59,7 @@ func Save(c Computer, program []int, ip int) int {
 
 func PrintFunc(c Computer, program []int, ip int) int {
 	value := getValue(program, ip, 1)
+	//fmt.Printf("%s output %d\n", c.name, value)
 	c.Output <- value
 	return ip + 2
 }
@@ -122,8 +124,9 @@ func (c Computer) Run(program []int) {
 		opcode := executable[ip] % 100
 		//fmt.Printf("%s IP %d op %d %v\n", c.name, ip, executable[ip], executable)
 		if opcode == 99 {
-			close(c.Input)
+			//fmt.Println(c.name + " ending")
 			close(c.Output)
+			close(c.Stopped)
 			break
 		}
 		ip = c.ops[opcode](c, executable, ip)
