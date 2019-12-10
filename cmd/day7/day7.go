@@ -9,7 +9,7 @@ import (
 func CalculateThrusterSignal(phases [5]int, program []intcode.IPType) int {
 	outputToThruster := make(chan int)
 
-	var amplifiers [5]intcode.Computer
+	var amplifiers [5]*intcode.Computer
 	for i := 0; i < 5; i++ {
 		amplifiers[i] = intcode.CreateComputer(fmt.Sprintf("%d", i),
 			map[int]intcode.Instruction{
