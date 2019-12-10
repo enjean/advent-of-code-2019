@@ -36,4 +36,7 @@ func main() {
 	program := intcode.ParseProgram(adventutil.Parse(9)[0])
 	part1 := ExecuteProgramWithInput(program, []intcode.IPType{1})
 	fmt.Printf("Part 1 %v\n", part1)
+
+	part2 := ExecuteProgramWithInput(program, []intcode.IPType{2})
+	fmt.Printf("Part 2 %v\n", part2)
 }
