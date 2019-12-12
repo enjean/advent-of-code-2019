@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/enjean/advent-of-code-2019/internal/adventutil"
+	"math"
+	"sort"
 )
 
 type Coordinate struct {
@@ -11,6 +13,14 @@ type Coordinate struct {
 
 func (c Coordinate) String() string {
 	return fmt.Sprintf("(%d,%d)", c.X, c.Y)
+}
+
+func (c Coordinate) DxDy(o Coordinate) (int, int) {
+	return o.X - c.X, o.Y - c.Y
+}
+
+func (c Coordinate) distance(o Coordinate) float64 {
+	return math.Sqrt(math.Pow(float64(o.X-c.X), 2) + math.Pow(float64(o.Y-c.Y), 2))
 }
 
 func ParseAsteroidLocations(lines []string) []Coordinate {
@@ -94,8 +104,130 @@ func FindMonitoringStation(regionMap []string) (Coordinate, int) {
 	return canSeeMost, maxCanSee
 }
 
+func AsteroidsDestroyed(asteroids []Coordinate, laser Coordinate) []Coordinate {
+	for i, c := range asteroids {
+		if c == laser {
+			asteroids = append(asteroids[:i], asteroids[i+1:]...)
+			break
+		}
+	}
+
+	maxX := 0
+	maxY := 0
+	asteroidsMap := make(map[Coordinate]bool)
+	for _, c := range asteroids {
+		if c.X > maxX {
+			maxX = c.X
+		}
+		if c.Y > maxY {
+			maxY = c.Y
+		}
+		asteroidsMap[c] = true
+	}
+
+	sort.Slice(asteroids, func(i, j int) bool {
+		dx1, dy1 := laser.DxDy(asteroids[i])
+		dx2, dy2 := laser.DxDy(asteroids[j])
+		q1 := quadrant(dx1, dy1)
+		q2 := quadrant(dx2, dy2)
+
+		if q1 < q2 {
+			return true
+		}
+		if q1 > q2 {
+			return false
+		}
+		slope1 := slope(dx1, dy1)
+		slope2 := slope(dx2, dy2)
+		if slope1 == slope2 {
+			return laser.distance(asteroids[i]) < laser.distance(asteroids[j])
+		}
+		return slope1 < slope2
+	})
+
+	//for _, a := range asteroids {
+	//	dx, dy := laser.DxDy(a)
+	//	fmt.Printf("%s %d,%d %d %f \n", a, dx, dy, quadrant(dx, dy), slope(dx, dy))
+	//}
+
+	var destroyedOrder []Coordinate
+	destroyedMap := make(map[Coordinate]bool)
+	for len(destroyedMap) < len(asteroids) {
+		var destroyedThisRound []Coordinate
+		for _, asteroid := range asteroids {
+			if destroyedMap[asteroid] {
+				continue
+			}
+			isBlockedThisRound := false
+			for _, d := range destroyedThisRound {
+				if isInBetween(laser, asteroid, d) {
+					isBlockedThisRound = true
+					break
+				}
+			}
+			if isBlockedThisRound {
+				//fmt.Println("Would have destroyed but blocked " + asteroid.String())
+				continue
+			}
+			//fmt.Printf("At %d Destroying %s\n", len(destroyedMap), asteroid)
+			destroyedOrder = append(destroyedOrder, asteroid)
+			destroyedMap[asteroid] = true
+			destroyedThisRound = append(destroyedThisRound, asteroid)
+			//printMap(asteroidsMap, destroyedMap, laser, maxX, maxY)
+		}
+	}
+
+	return destroyedOrder
+}
+
+func printMap(asteroids, destroyed map[Coordinate]bool, laser Coordinate, maxX, maxY int) {
+	for y := 0; y <= maxY; y++ {
+		for x := 0; x <= maxX; x++ {
+			var character string
+			coord := Coordinate{x, y}
+			if destroyed[coord] {
+				character = "*"
+			} else if asteroids[coord] {
+				character = "#"
+			} else if coord == laser {
+				character = "X"
+			} else {
+				character = "."
+			}
+			fmt.Print(character)
+		}
+		fmt.Println()
+	}
+}
+
+func quadrant(dx, dy int) int {
+	if dx >= 0 && dy < 0 {
+		return 1
+	} else if dx > 0 && dy >= 0 {
+		return 2
+	} else if dx <= 0 && dy > 0 {
+		return 3
+	} else if dx < 0 && dy <= 0 {
+		return 4
+	} else {
+		panic("Not assigned to quadrant")
+	}
+}
+
+func slope(dx, dy int) float64 {
+	if dx == 0 {
+		return -math.MaxFloat32
+	}
+	return float64(dy) / float64(dx)
+}
+
 func main() {
 	regionMap := adventutil.Parse(10)
-	_, canSee := FindMonitoringStation(regionMap)
-	fmt.Printf("Part 1:%d\n", canSee)
+	station, canSee := FindMonitoringStation(regionMap)
+	fmt.Printf("Part 1: %s can see %d\n", station, canSee)
+
+	destructionOrder := AsteroidsDestroyed(ParseAsteroidLocations(regionMap), station)
+	twoHundredth := destructionOrder[199]
+	part2 := 100 * twoHundredth.X + twoHundredth.Y
+	fmt.Printf("Part 2: %d\n", part2)
 }
