@@ -1,6 +1,7 @@
 package main
 
 import (
+	. "github.com/enjean/advent-of-code-2019/internal/adventutil/coordinate"
 	"testing"
 )
 

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/enjean/advent-of-code-2019/internal/adventutil"
+	. "github.com/enjean/advent-of-code-2019/internal/adventutil/coordinate"
 	"strconv"
 	"strings"
 )
@@ -23,20 +24,12 @@ type PathComponent struct {
 
 type Wire []PathComponent
 
-type point struct {
-	x, y int
-}
-
-func (p point) distance(o point) int {
-	return adventutil.Abs(p.x-o.x) + adventutil.Abs(p.y-o.y)
-}
-
 func FindNearestIntersection(wires []Wire) int {
-	wiresAtPoints := make(map[point]int)
+	wiresAtPoints := make(map[Coordinate]int)
 
 	for _, wire := range wires {
-		pointsInWire := make(map[point]bool)
-		currentPosition := point{0, 0}
+		pointsInWire := make(map[Coordinate]bool)
+		currentPosition := Coordinate{0, 0}
 		for _, pathComponent := range wire {
 			movementFunc := movementFunction(pathComponent.dir)
 			for i := 0; i < pathComponent.distance; i++ {
@@ -54,7 +47,7 @@ func FindNearestIntersection(wires []Wire) int {
 		if numWires == 1 {
 			continue
 		}
-		distanceToIntersection := point{0, 0}.distance(p)
+		distanceToIntersection := Coordinate{0, 0}.ManhattanDistance(p)
 		if distanceToIntersection < minDistance {
 			minDistance = distanceToIntersection
 		}
@@ -80,10 +73,10 @@ func FindFirstIntersection(wire1, wire2 Wire) int {
 	return minSteps
 }
 
-func buildStepsToPoint(wire Wire) map[point]int {
-	wirePoints := make(map[point]int)
+func buildStepsToPoint(wire Wire) map[Coordinate]int {
+	wirePoints := make(map[Coordinate]int)
 	step := 0
-	point := point{0, 0}
+	point := Coordinate{0, 0}
 	for _, pc := range wire {
 		for i := 0; i < pc.distance; i++ {
 			step++
@@ -96,23 +89,23 @@ func buildStepsToPoint(wire Wire) map[point]int {
 	return wirePoints
 }
 
-func movementFunction(direction Direction) func(point) point {
+func movementFunction(direction Direction) func(Coordinate) Coordinate {
 	switch direction {
 	case U:
-		return func(p point) point {
-			return point{p.x, p.y + 1}
+		return func(p Coordinate) Coordinate {
+			return Coordinate{X: p.X, Y: p.Y + 1}
 		}
 	case D:
-		return func(p point) point {
-			return point{p.x, p.y - 1}
+		return func(p Coordinate) Coordinate {
+			return Coordinate{X: p.X, Y: p.Y - 1}
 		}
 	case L:
-		return func(p point) point {
-			return point{p.x - 1, p.y}
+		return func(p Coordinate) Coordinate {
+			return Coordinate{X: p.X - 1, Y: p.Y}
 		}
 	case R:
-		return func(p point) point {
-			return point{p.x + 1, p.y}
+		return func(p Coordinate) Coordinate {
+			return Coordinate{X: p.X + 1, Y: p.Y}
 		}
 	}
 	panic("Invalid dir")

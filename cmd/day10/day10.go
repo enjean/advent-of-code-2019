@@ -3,25 +3,10 @@ package main
 import (
 	"fmt"
 	"github.com/enjean/advent-of-code-2019/internal/adventutil"
+	. "github.com/enjean/advent-of-code-2019/internal/adventutil/coordinate"
 	"math"
 	"sort"
 )
-
-type Coordinate struct {
-	X, Y int
-}
-
-func (c Coordinate) String() string {
-	return fmt.Sprintf("(%d,%d)", c.X, c.Y)
-}
-
-func (c Coordinate) DxDy(o Coordinate) (int, int) {
-	return o.X - c.X, o.Y - c.Y
-}
-
-func (c Coordinate) distance(o Coordinate) float64 {
-	return math.Sqrt(math.Pow(float64(o.X-c.X), 2) + math.Pow(float64(o.Y-c.Y), 2))
-}
 
 func ParseAsteroidLocations(lines []string) []Coordinate {
 	var asteroidLocations []Coordinate
@@ -140,7 +125,7 @@ func AsteroidsDestroyed(asteroids []Coordinate, laser Coordinate) []Coordinate {
 		slope1 := slope(dx1, dy1)
 		slope2 := slope(dx2, dy2)
 		if slope1 == slope2 {
-			return laser.distance(asteroids[i]) < laser.distance(asteroids[j])
+			return laser.Distance(asteroids[i]) < laser.Distance(asteroids[j])
 		}
 		return slope1 < slope2
 	})
