@@ -16,7 +16,7 @@ const (
 	R
 )
 
-func CountPanelsPainted(program []IPType) int {
+func PaintPanels(program []IPType, startingColor int) (map[Coordinate]bool, map[Coordinate]int) {
 	colors := make(map[Coordinate]int)
 	painted := make(map[Coordinate]bool)
 
@@ -35,6 +35,8 @@ func CountPanelsPainted(program []IPType) int {
 	go func() { computer.Run(program) }()
 
 	currentCoord := Coordinate{}
+	colors[currentCoord] = startingColor
+
 	currentDir := U
 	for {
 		paintType, done := getOutput(computer, IPType(colors[currentCoord]))
@@ -51,7 +53,7 @@ func CountPanelsPainted(program []IPType) int {
 		currentDir = turn(currentDir, int(turnInstruction))
 		currentCoord = move(currentCoord, currentDir)
 	}
-	return len(painted)
+	return painted, colors
 }
 
 func getOutput(computer *Computer, input IPType) (IPType, bool) {
@@ -108,6 +110,41 @@ func move(position Coordinate, direction Direction) Coordinate {
 
 func main() {
 	program := ParseProgram(adventutil.Parse(11)[0])
-	part1 := CountPanelsPainted(program)
-	fmt.Printf("Part 1: %d\n", part1)
+	part1Painted, _ := PaintPanels(program, 0)
+	fmt.Printf("Part 1: %d\n", len(part1Painted))
+
+	_, part2Colors := PaintPanels(program, 1)
+
+	minX := 0
+	maxX := 0
+	minY := 0
+	maxY := 0
+	for c := range part2Colors {
+		if c.X < minX {
+			minX = c.X
+		}
+		if c.X > maxX {
+			maxX = c.X
+		}
+		if c.Y < minY {
+			minY = c.Y
+		}
+		if c.Y > maxY {
+			maxY = c.Y
+		}
+	}
+	for y := minX; y <= maxY; y++ {
+		for x := minX; x <= maxX; x++ {
+			var character string
+			coord := Coordinate{X: x, Y: y}
+			if part2Colors[coord] == 1 {
+				character = "*"
+			} else {
+				character = " "
+			}
+			fmt.Print(character)
+		}
+		fmt.Println()
+	}
+
 }
