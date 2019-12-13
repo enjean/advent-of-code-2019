@@ -126,3 +126,30 @@ func TestExamples(t *testing.T) {
 		}
 	})
 }
+
+func TestFindFirstRepeat(t *testing.T) {
+	t.Run("Small Example", func(t *testing.T) {
+		ms := ParseMoonSystem([]string{
+			"<x=-1, y=0, z=2>",
+			"<x=2, y=-10, z=-7>",
+			"<x=4, y=-8, z=8>",
+			"<x=3, y=5, z=-1>",
+		})
+		result := FindFirstRepeat(ms)
+		if result != 2772 {
+			t.Errorf("Expected 2772 got %d", result)
+		}
+	})
+	t.Run("Bigger Example", func(t *testing.T) {
+		ms := ParseMoonSystem([]string{
+			"<x=-8, y=-10, z=0>",
+			"<x=5, y=5, z=10>",
+			"<x=2, y=-7, z=3>",
+			"<x=9, y=-8, z=-3>",
+		})
+		result := FindFirstRepeat(ms)
+		if result != 4686774924 {
+			t.Errorf("Expected 4686774924 got %d", result)
+		}
+	})
+}

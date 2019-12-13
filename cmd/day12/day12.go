@@ -99,12 +99,123 @@ func (ms *MoonSystem) ApplyStep() {
 
 func Simulate(ms *MoonSystem, steps int) {
 	for step := 0; step < steps; step++ {
+		//fmt.Printf("%d", step)
+		////fmt.Printf("%d", ms.TotalEnergy())
+		//for _, moon := range ms.moons {
+		//	//fmt.Printf(",%d,%d", moon.kineticEnergy(), moon.potentialEnergy())
+		//	fmt.Printf(",%d,%d,%d", moon.position.x, moon.position.y, moon.position.z)
+		//}
+		//fmt.Println()
 		ms.ApplyStep()
 	}
 }
 
+type posV struct  {
+	position, velocity int
+}
+
+func equal(state1, state2 []posV) bool {
+	for i, s := range state1 {
+		if s != state2[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func performStep(state []posV) []posV {
+	newState := make([]posV, len(state))
+	for i, s := range state {
+		dV := 0
+		for j, o := range state {
+			if i == j {
+				continue
+			}
+			if s.position < o.position {
+				dV++
+			} else if s.position > o.position {
+				dV--
+			}
+		}
+		newState[i].velocity = s.velocity + dV
+	}
+	for i, s := range state {
+		newState[i].position = s.position + newState[i].velocity
+	}
+	return newState
+}
+
+func simulateAxis(initialState []posV ) int {
+	state := make([]posV, len(initialState))
+	copy(state, initialState)
+	step := 0
+	for {
+		step++
+		state = performStep(state)
+		if equal(state, initialState) {
+			break
+		}
+	}
+	return step
+}
+
+func buildAxisPV(ms *MoonSystem, getAxisVal func(coord ThreeDCoord) int) []posV {
+	var vals []posV
+	for _, moon := range ms.moons {
+		vals = append(vals, posV{
+			position: getAxisVal(moon.position),
+			velocity: getAxisVal(moon.velocity),
+		})
+	}
+	return vals
+}
+
+func FindFirstRepeat(ms *MoonSystem) int {
+	xPeriod := simulateAxis(buildAxisPV(ms,
+		func(coord ThreeDCoord) int {
+			return coord.x
+		}))
+	fmt.Printf("X period %d\n", xPeriod)
+
+	yPeriod := simulateAxis(buildAxisPV(ms,
+		func(coord ThreeDCoord) int {
+			return coord.y
+		}))
+	fmt.Printf("Y period %d\n", yPeriod)
+
+	zPeriod := simulateAxis(buildAxisPV(ms,
+		func(coord ThreeDCoord) int {
+			return coord.z
+		}))
+	fmt.Printf("Z period %d\n", zPeriod)
+
+	return LCM(xPeriod, yPeriod, zPeriod)
+}
+
+func GCD(a, b int) int {
+	for b != 0 {
+		t := b
+		b = a % b
+		a = t
+	}
+	return a
+}
+
+func LCM(a, b int, integers ...int) int {
+	result := a * b / GCD(a, b)
+
+	for i := 0; i < len(integers); i++ {
+		result = LCM(result, integers[i])
+	}
+
+	return result
+}
+
 func main() {
 	moonSystem := ParseMoonSystem(adventutil.Parse(12))
-	Simulate(moonSystem, 1000)
-	fmt.Printf("Part 1: %d\n", moonSystem.TotalEnergy())
+	//Simulate(moonSystem, 1000)
+	//fmt.Printf("Part 1: %d\n", moonSystem.TotalEnergy())
+
+	part2 := FindFirstRepeat(moonSystem)
+	fmt.Printf("Part 2: %d\n", part2)
 }
