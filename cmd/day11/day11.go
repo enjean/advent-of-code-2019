@@ -114,37 +114,11 @@ func main() {
 	fmt.Printf("Part 1: %d\n", len(part1Painted))
 
 	_, part2Colors := PaintPanels(program, 1)
-
-	minX := 0
-	maxX := 0
-	minY := 0
-	maxY := 0
-	for c := range part2Colors {
-		if c.X < minX {
-			minX = c.X
+	PrintIntCoordinateMap(part2Colors, func(i int) string {
+		if i == 1 {
+			return "*"
 		}
-		if c.X > maxX {
-			maxX = c.X
-		}
-		if c.Y < minY {
-			minY = c.Y
-		}
-		if c.Y > maxY {
-			maxY = c.Y
-		}
-	}
-	for y := minX; y <= maxY; y++ {
-		for x := minX; x <= maxX; x++ {
-			var character string
-			coord := Coordinate{X: x, Y: y}
-			if part2Colors[coord] == 1 {
-				character = "*"
-			} else {
-				character = " "
-			}
-			fmt.Print(character)
-		}
-		fmt.Println()
-	}
+		return " "
+	})
 
 }

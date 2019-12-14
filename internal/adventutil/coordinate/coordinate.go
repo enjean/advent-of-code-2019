@@ -25,3 +25,30 @@ func (c Coordinate) Distance(o Coordinate) float64 {
 func (c Coordinate) ManhattanDistance(o Coordinate) int {
 	return adventutil.Abs(c.X-o.X) + adventutil.Abs(c.Y-o.Y)
 }
+
+func PrintIntCoordinateMap(coordMap map[Coordinate]int, valToString func(int)string) {
+	minX := 0
+	maxX := 0
+	minY := 0
+	maxY := 0
+	for c := range coordMap {
+		if c.X < minX {
+			minX = c.X
+		}
+		if c.X > maxX {
+			maxX = c.X
+		}
+		if c.Y < minY {
+			minY = c.Y
+		}
+		if c.Y > maxY {
+			maxY = c.Y
+		}
+	}
+	for y := minX; y <= maxY; y++ {
+		for x := minX; x <= maxX; x++ {
+			fmt.Print(valToString(coordMap[Coordinate{X: x, Y: y}]))
+		}
+		fmt.Println()
+	}
+}

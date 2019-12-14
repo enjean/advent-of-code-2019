@@ -34,12 +34,11 @@ func CreateComputer(name string, ops map[int]Instruction) *Computer {
 }
 
 func binaryFunc(c *Computer, program memory, ip IPType, operand func(IPType, IPType) IPType) IPType {
+	//fmt.Printf("%d %d %d %d\n", program[ip], program[ip+1],program[ip+2],program[ip+3])
 	arg1 := getValue(c, program, ip, 1)
 	arg2 := getValue(c, program, ip, 2)
-	dest := program[ip+3]
-	if parameterMode(program[ip], 3) == 2 {
-		dest += c.relativeBase
-	}
+	dest := getWriteAddress(c, program, ip, 3)
+	//fmt.Printf("program[%d] = %d op %d = %d\n", dest, arg1, arg2,  operand(arg1, arg2))
 	program[dest] = operand(arg1, arg2)
 	return ip + 4
 }
@@ -57,10 +56,11 @@ func Multiply(c *Computer, program memory, ip IPType) IPType {
 }
 
 func Save(c *Computer, program memory, ip IPType) IPType {
-	//fmt.Println(program[ip:ip+2])
-	dest := program[ip+1] + c.relativeBase
+	//fmt.Printf("save %d %d\n", program[ip], program[ip+1])
 	input := <-c.Input
+	dest := getWriteAddress(c, program, ip, 1)
 	//fmt.Printf("%s received input %d\n", c.name, input)
+	//fmt.Printf("program[%d]=%d\n", dest, input)
 	program[dest] = input
 	return ip + 2
 }
@@ -73,6 +73,7 @@ func PrintFunc(c *Computer, program memory, ip IPType) IPType {
 }
 
 func jump(c *Computer, program memory, ip IPType, shouldJump func(IPType) bool) IPType {
+	//fmt.Printf("%d %d %d \n", program[ip], program[ip+1],program[ip+2])
 	arg1 := getValue(c, program, ip, 1)
 	if shouldJump(arg1) {
 		return getValue(c, program, ip, 2)
@@ -115,6 +116,16 @@ func AdjustRelativeBase(c *Computer, program memory, ip IPType) IPType {
 	return ip + 2
 }
 
+func getWriteAddress(c *Computer, program memory, ip IPType, argNum int) IPType {
+	opcode := program[ip]
+	argValue := program[ip+IPType(argNum)]
+	mode := parameterMode(opcode, argNum)
+	if mode == 2 {
+		argValue += c.relativeBase
+	}
+	return argValue
+}
+
 func getValue(c *Computer, program memory, ip IPType, argNum int) IPType {
 	opcode := program[ip]
 	argValue := program[ip+IPType(argNum)]
@@ -123,6 +134,7 @@ func getValue(c *Computer, program memory, ip IPType, argNum int) IPType {
 		if argValue < 0 {
 			panic("Invalid index")
 		}
+		//fmt.Printf("Returning program[%d]=%d\n", argValue, program[argValue])
 		return program[argValue]
 	}
 	if mode == 1 {
@@ -145,7 +157,7 @@ func parameterMode(opcode IPType, argNum int) int {
 func (c *Computer) Run(program []IPType) {
 	memory := make(memory)
 	for i, val := range program {
-		memory[IPType(i)] = IPType(val)
+		memory[IPType(i)] = val
 	}
 
 	ip := IPType(0)
