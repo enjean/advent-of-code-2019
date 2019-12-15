@@ -38,6 +38,13 @@ func Pow10(n int) int64 {
 	return result
 }
 
+func Min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 const MaxUint = ^uint(0)
 const MinUint = 0
 
