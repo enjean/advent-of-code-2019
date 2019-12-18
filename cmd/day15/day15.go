@@ -17,15 +17,19 @@ const (
 )
 
 func directions() []Direction {
-	return []Direction{N,S,W,E}
+	return []Direction{N, S, W, E}
 }
 
 func (d Direction) reverse() Direction {
 	switch d {
-	case N: return S
-	case S: return N
-	case W: return E
-	case E: return W
+	case N:
+		return S
+	case S:
+		return N
+	case W:
+		return E
+	case E:
+		return W
 	}
 	panic("Bad direction")
 }
@@ -45,11 +49,11 @@ func neighborInDirection(coordinate Coordinate, direction Direction) Coordinate 
 }
 
 type directionCoord struct {
-		direction Direction
-		from      Coordinate
+	direction Direction
+	from      Coordinate
 }
 
-func ShortestPathToOxygenSystem(program []IPType) int {
+func ShortestPathToOxygenSystem(program []IPType) (int, map[Coordinate]int, Coordinate) {
 	computer := CreateComputer("Game", map[int]Instruction{
 		1: Add,
 		2: Multiply,
@@ -66,25 +70,27 @@ func ShortestPathToOxygenSystem(program []IPType) int {
 	visited := make(map[Coordinate]bool)
 	stepsTo := make(map[Coordinate]int)
 	dirToOrigin := make(map[Coordinate]Direction)
+	grid := make(map[Coordinate]int)
 	var coordsToTry []directionCoord
-	origin := Coordinate{0,0}
+	origin := Coordinate{0, 0}
 	currentLocation := Coordinate{}
 	stepsTo[currentLocation] = 0
+	var oxygenLoc Coordinate
 	for _, direction := range directions() {
-		coordsToTry = append(coordsToTry, directionCoord{direction:direction, from:currentLocation})
+		coordsToTry = append(coordsToTry, directionCoord{direction: direction, from: currentLocation})
 	}
-	for {
+	for len(coordsToTry) > 0 {
 		trying := coordsToTry[0]
-		fmt.Printf("Trying %v from %v \n", trying.direction, trying.from)
+		//fmt.Printf("Trying %v from %v \n", trying.direction, trying.from)
 
 		coordsToTry = coordsToTry[1:]
 
 		sourceCoord := trying.from
 		// travel there
 		if currentLocation != sourceCoord {
-			fmt.Printf("Need to get to %v from %v\n", sourceCoord, currentLocation)
+			//fmt.Printf("Need to get to %v from %v\n", sourceCoord, currentLocation)
 			currentLocToOrigin := []Coordinate{currentLocation}
-			inPath := map[Coordinate]bool{currentLocation:true}
+			inPath := map[Coordinate]bool{currentLocation: true}
 			loc := currentLocation
 			for loc != origin {
 				loc = neighborInDirection(loc, dirToOrigin[loc])
@@ -129,30 +135,81 @@ func ShortestPathToOxygenSystem(program []IPType) int {
 		computer.Input <- IPType(trying.direction)
 
 		result := <-computer.Output
-		if result == 2 {
-			return stepsTo[sourceCoord] + 1
-		}
+
 		if result == 0 {
-			fmt.Printf("%v = wall\n", destCoord)
+			//fmt.Printf("%v = wall\n", destCoord)
 			// hit a wall
+			grid[destCoord] = 1
 			continue
 		}
-		if result == 1 {
-			currentLocation = destCoord
-			stepsTo[currentLocation] = stepsTo[sourceCoord] + 1
-			dirToOrigin[currentLocation] = trying.direction.reverse()
-			for _, direction := range directions() {
-				neighbor := neighborInDirection(destCoord, direction)
-				if !visited[neighbor] {
-					coordsToTry = append(coordsToTry, directionCoord{direction:direction, from:currentLocation})
-				}
+		if result == 2 {
+			grid[destCoord] = 2
+			oxygenLoc = destCoord
+			//return stepsTo[sourceCoord] + 1
+		}
+		currentLocation = destCoord
+		stepsTo[currentLocation] = stepsTo[sourceCoord] + 1
+		dirToOrigin[currentLocation] = trying.direction.reverse()
+		for _, direction := range directions() {
+			neighbor := neighborInDirection(destCoord, direction)
+			if !visited[neighbor] {
+				coordsToTry = append(coordsToTry, directionCoord{direction: direction, from: currentLocation})
 			}
-			// moved there
 		}
 	}
+
+	printMap(grid, currentLocation)
+
+	return stepsTo[oxygenLoc], grid, oxygenLoc
+}
+
+func MinutesToFill(grid map[Coordinate]int, oxygenLocation Coordinate) int {
+	minuteReached := make(map[Coordinate]int)
+	maxMinuteReached := 0
+	coordsToTry := []Coordinate{oxygenLocation}
+	visited := map[Coordinate]bool {
+		oxygenLocation: true,
+	}
+	currentLocation := oxygenLocation
+	for len(coordsToTry) > 0 {
+		currentLocation = coordsToTry[0]
+		coordsToTry = coordsToTry[1:]
+		for _, direction := range directions() {
+			neighbor := neighborInDirection(currentLocation, direction)
+			if !visited[neighbor] && grid[neighbor] != 1 {
+				visited[neighbor] = true
+				minuteReached[neighbor] =  minuteReached[currentLocation] + 1
+				if minuteReached[neighbor] > maxMinuteReached {
+					maxMinuteReached = minuteReached[neighbor]
+				}
+				coordsToTry = append(coordsToTry, neighbor)
+			}
+		}
+	}
+	return maxMinuteReached
+}
+
+func printMap(grid map[Coordinate]int, robotLocation Coordinate) {
+	grid[robotLocation] = 3
+	PrintIntCoordinateMap(grid, func(i int) string {
+		switch i {
+		case 1:
+			return "#"
+		case 2:
+			return "O"
+		case 3:
+			return "D"
+		default:
+			return "."
+		}
+	})
+	grid[robotLocation] = 0
 }
 
 func main() {
-	part1 := ShortestPathToOxygenSystem(ParseProgram(adventutil.Parse(15)[0]))
+	part1, grid, oxygenLoc := ShortestPathToOxygenSystem(ParseProgram(adventutil.Parse(15)[0]))
 	fmt.Printf("Part 1: %d\n", part1)
+
+	part2 := MinutesToFill(grid, oxygenLoc)
+	fmt.Printf("Part 2: %d\n", part2)
 }
