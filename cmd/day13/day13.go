@@ -7,20 +7,10 @@ import (
 	. "github.com/enjean/advent-of-code-2019/internal/intcode"
 )
 
-func buildGrid(program []IPType) map[Coordinate]int {
+func buildGrid(program Program) map[Coordinate]int {
 	grid := make(map[Coordinate]int)
 
-	computer := CreateComputer("Game", map[int]Instruction{
-		1: Add,
-		2: Multiply,
-		3: Save,
-		4: PrintFunc,
-		5: JumpIfTrue,
-		6: JumpIfFalse,
-		7: LessThan,
-		8: Equals,
-		9: AdjustRelativeBase,
-	})
+	computer := CreateCompleteComputer("Game")
 
 	go func() { computer.Run(program) }()
 
@@ -41,21 +31,11 @@ func buildGrid(program []IPType) map[Coordinate]int {
 	}
 }
 
-func playGame(program []IPType) int {
+func playGame(program Program) int {
 	var score int
 	grid := make(map[Coordinate]int)
 
-	computer := CreateComputer("Game", map[int]Instruction{
-		1: Add,
-		2: Multiply,
-		3: Save,
-		4: PrintFunc,
-		5: JumpIfTrue,
-		6: JumpIfFalse,
-		7: LessThan,
-		8: Equals,
-		9: AdjustRelativeBase,
-	})
+	computer := CreateCompleteComputer("Game")
 
 	program[0] = 2 // insert two quarters
 	go func() { computer.Run(program) }()

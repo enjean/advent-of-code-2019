@@ -7,17 +7,7 @@ import (
 )
 
 func ExecuteProgramWithInput(program []intcode.IPType, inputs []intcode.IPType) []intcode.IPType {
-	computer := intcode.CreateComputer("", map[int]intcode.Instruction{
-		1: intcode.Add,
-		2: intcode.Multiply,
-		3: intcode.Save,
-		4: intcode.PrintFunc,
-		5: intcode.JumpIfTrue,
-		6: intcode.JumpIfFalse,
-		7: intcode.LessThan,
-		8: intcode.Equals,
-		9: intcode.AdjustRelativeBase,
-	})
+	computer := intcode.CreateCompleteComputer("")
 
 	go func() { computer.Run(program) }()
 

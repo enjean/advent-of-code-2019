@@ -7,12 +7,13 @@ import (
 )
 
 type IPType int64
+type Program []IPType
 type memory map[IPType]IPType
 type Instruction func(*Computer, memory, IPType) IPType
 
-func ParseProgram(programString string) []IPType {
+func ParseProgram(programString string) Program {
 	partsStrings := strings.Split(programString, ",")
-	var program []IPType
+	var program Program
 	for _, partString := range partsStrings {
 		asInt, _ := strconv.ParseInt(partString, 10, 64)
 		program = append(program, IPType(asInt))
@@ -27,6 +28,20 @@ type Computer struct {
 	Output       chan IPType
 	Stopped      chan struct{}
 	relativeBase IPType
+}
+
+func CreateCompleteComputer(name string) *Computer{
+	return CreateComputer(name, map[int]Instruction{
+		1: Add,
+		2: Multiply,
+		3: Save,
+		4: PrintFunc,
+		5: JumpIfTrue,
+		6: JumpIfFalse,
+		7: LessThan,
+		8: Equals,
+		9: AdjustRelativeBase,
+	})
 }
 
 func CreateComputer(name string, ops map[int]Instruction) *Computer {
@@ -154,7 +169,7 @@ func parameterMode(opcode IPType, argNum int) int {
 	return int((int64(opcode) / (adventutil.Pow10(argNum + 1))) % 10)
 }
 
-func (c *Computer) Run(program []IPType) {
+func (c *Computer) Run(program Program) {
 	memory := make(memory)
 	for i, val := range program {
 		memory[IPType(i)] = val

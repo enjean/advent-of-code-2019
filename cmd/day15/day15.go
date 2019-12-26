@@ -53,18 +53,8 @@ type directionCoord struct {
 	from      Coordinate
 }
 
-func ShortestPathToOxygenSystem(program []IPType) (int, map[Coordinate]int, Coordinate) {
-	computer := CreateComputer("Game", map[int]Instruction{
-		1: Add,
-		2: Multiply,
-		3: Save,
-		4: PrintFunc,
-		5: JumpIfTrue,
-		6: JumpIfFalse,
-		7: LessThan,
-		8: Equals,
-		9: AdjustRelativeBase,
-	})
+func ShortestPathToOxygenSystem(program Program) (int, map[Coordinate]int, Coordinate) {
+	computer := CreateCompleteComputer("Game")
 	go func() { computer.Run(program) }()
 
 	visited := make(map[Coordinate]bool)

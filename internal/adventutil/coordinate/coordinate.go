@@ -26,7 +26,16 @@ func (c Coordinate) ManhattanDistance(o Coordinate) int {
 	return adventutil.Abs(c.X-o.X) + adventutil.Abs(c.Y-o.Y)
 }
 
-func PrintIntCoordinateMap(coordMap map[Coordinate]int, valToString func(int)string) {
+func (c Coordinate) Neighbors() []Coordinate {
+	return []Coordinate{
+		{c.X, c.Y - 1},
+		{c.X + 1, c.Y},
+		{c.X, c.Y + 1},
+		{c.X - 1, c.Y},
+	}
+}
+
+func PrintIntCoordinateMap(coordMap map[Coordinate]int, valToString func(int) string) {
 	minX := 0
 	maxX := 0
 	minY := 0

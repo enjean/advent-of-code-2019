@@ -16,21 +16,11 @@ const (
 	R
 )
 
-func PaintPanels(program []IPType, startingColor int) (map[Coordinate]bool, map[Coordinate]int) {
+func PaintPanels(program Program, startingColor int) (map[Coordinate]bool, map[Coordinate]int) {
 	colors := make(map[Coordinate]int)
 	painted := make(map[Coordinate]bool)
 
-	computer := CreateComputer("Painter", map[int]Instruction{
-		1: Add,
-		2: Multiply,
-		3: Save,
-		4: PrintFunc,
-		5: JumpIfTrue,
-		6: JumpIfFalse,
-		7: LessThan,
-		8: Equals,
-		9: AdjustRelativeBase,
-	})
+	computer := CreateCompleteComputer("Painter")
 
 	go func() { computer.Run(program) }()
 
