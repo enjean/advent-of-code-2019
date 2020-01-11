@@ -4,8 +4,7 @@ import (
 	"container/heap"
 	"fmt"
 	. "github.com/enjean/advent-of-code-2019/internal/adventutil/coordinate"
-	"regexp"
-	"strings"
+	"math"
 	"unicode"
 )
 
@@ -26,10 +25,10 @@ func parseMap(input []string) map[Coordinate]rune {
 }
 
 type searchState struct {
-	key          rune
-	keysFound    string
-	steps        int
-	index        int
+	key       int
+	keysFound int
+	steps     int
+	index     int
 }
 
 type PriorityQueue []*searchState
@@ -64,82 +63,76 @@ func (pq *PriorityQueue) Pop() interface{} {
 }
 
 type adjacencyEntry struct {
-	key           rune
+	key           int
 	steps         int
-	keysInBetween string
+	keysInBetween int
 }
 
 func MinStepsToFindAllKeys(tunnelMap map[Coordinate]rune) int {
-	var currentCoord Coordinate
-	numKeys := 0
-	adjacencyMatrix := make(map[rune][]adjacencyEntry)
+
+	var pq PriorityQueue
+	foundAllVal := 0
+	adjacencyMatrix := make(map[int][]adjacencyEntry)
 	for coord, val := range tunnelMap {
 		if val == '@' {
-			currentCoord = coord
-			continue
+			adjacencyMatrix[0] = buildAdjacencyEntries(coord, 0, tunnelMap)
+			heap.Push(&pq, &searchState{
+				key:       0,
+				keysFound: 0,
+				steps:     0,
+			})
 		}
 		if unicode.IsLower(val) {
-			numKeys++
-			adjacencyMatrix[val] = buildAdjacencyEntries(coord, tunnelMap)
+			key := keyAsIntExpr(val)
+			foundAllVal += key
+			adjacencyMatrix[key] = buildAdjacencyEntries(coord, key, tunnelMap)
 		}
 	}
 
 	//for key, entries := range adjacencyMatrix {
 	//	fmt.Println(string(key) + ":")
 	//	for _, entry := range entries {
-	//		fmt.Printf("  %s %d %s\n", string(entry.key), entry.steps, entry.keysInBetween)
+	//		fmt.Printf("  %s %d %d\n", string(entry.key), entry.steps, entry.keysInBetween)
 	//	}
 	//}
-
-	var pq PriorityQueue
-
-	for _, reachableKey := range reachableKeys(tunnelMap, currentCoord, nil) {
-		heap.Push(&pq, &searchState{
-			key:       reachableKey.key,
-			keysFound: string(reachableKey.key),
-			steps:     reachableKey.steps,
-		})
-	}
 
 	for {
 		processing := heap.Pop(&pq).(*searchState)
 		//fmt.Printf("%d\n", pq.Len())
-		//fmt.Printf("Processing %s %d\n", processing.keysFound, processing.steps)
-		if len(processing.keysFound) == numKeys {
+		fmt.Printf("Processing %d\n", processing.steps)
+		if processing.keysFound == foundAllVal {
 			return processing.steps
 		}
 
 		//reachableKeys := reachableKeys(tunnelMap, processing.coordinate, processing.keysFound)
 		//fmt.Printf("Reachable keys = %v\n", reachableKeys)
 		for _, adjacencyEntry := range adjacencyMatrix[processing.key] {
-			if strings.ContainsRune(processing.keysFound, adjacencyEntry.key) {
+			if hasRequiredKeys(processing.keysFound, adjacencyEntry.key) {
+				// already have this key
 				continue
 			}
-			matchExpr := fmt.Sprintf("^[%s]{%d}$", processing.keysFound, len(adjacencyEntry.keysInBetween))
-			match, _ := regexp.MatchString(matchExpr, adjacencyEntry.keysInBetween)
-			if match {
-				//fmt.Printf("Can reach %s\n", string(adjacencyEntry.key))
+			if hasRequiredKeys(processing.keysFound, adjacencyEntry.keysInBetween) {
 				heap.Push(&pq, &searchState{
-					key: adjacencyEntry.key,
-					keysFound:  processing.keysFound + string(adjacencyEntry.key),
-					steps:      processing.steps + adjacencyEntry.steps,
+					key:       adjacencyEntry.key,
+					keysFound: processing.keysFound + adjacencyEntry.key,
+					steps:     processing.steps + adjacencyEntry.steps,
 				})
 			}
 		}
 	}
 }
 
-func buildAdjacencyEntries(start Coordinate, tunnelMap map[Coordinate]rune) []adjacencyEntry {
+func buildAdjacencyEntries(start Coordinate, startKeyExpr int, tunnelMap map[Coordinate]rune) []adjacencyEntry {
 	var adjacencyEntries []adjacencyEntry
 
 	type pathState struct {
 		coordinate    Coordinate
 		steps         int
-		keysInBetween string
+		keysInBetween int
 	}
 
 	toVisit := []pathState{
-		{start, 0, ""},
+		{start, 0, 0},
 	}
 	visited := map[Coordinate]bool{
 		start: true,
@@ -151,23 +144,24 @@ func buildAdjacencyEntries(start Coordinate, tunnelMap map[Coordinate]rune) []ad
 		val := tunnelMap[visiting.coordinate]
 		keysToGetHere := visiting.keysInBetween
 
-		if visiting.steps !=0 && unicode.IsLower(val) {
+		if visiting.steps != 0 && unicode.IsLower(val) {
+			keyVal := keyAsIntExpr(val)
 			//pattern := fmt.Sprintf("^[%s]{%d}$", keysToGetHere, len(keysToGetHere))
 			adjacencyEntries = append(adjacencyEntries, adjacencyEntry{
-				key:           val,
+				key:           keyVal,
 				steps:         visiting.steps,
 				keysInBetween: keysToGetHere,
 			})
 
-			if !strings.ContainsRune(keysToGetHere, val) {
-				keysToGetHere += string(val)
+			if !hasRequiredKeys(keysToGetHere, keyVal) {
+				keysToGetHere += keyVal
 			}
 		}
 
 		if unicode.IsUpper(val) {
-			keyVal := unicode.ToLower(val)
-			if !strings.ContainsRune(keysToGetHere, keyVal) {
-				keysToGetHere += string(keyVal)
+			keyVal := keyAsIntExpr(unicode.ToLower(val))
+			if !hasRequiredKeys(keysToGetHere, keyVal) {
+				keysToGetHere += keyVal
 			}
 		}
 
@@ -188,71 +182,12 @@ func buildAdjacencyEntries(start Coordinate, tunnelMap map[Coordinate]rune) []ad
 	return adjacencyEntries
 }
 
-func appendKeysFound(keysFound map[rune]bool, key rune) map[rune]bool {
-	newKeysFound := make(map[rune]bool)
-	for k, v := range keysFound {
-		newKeysFound[k] = v
-	}
-	newKeysFound[key] = true
-	return newKeysFound
+func keyAsIntExpr(key rune) int {
+	return int(math.Pow(2, float64(key-'a')))
 }
 
-func appendKeyFindOrder(keyFindOrder []rune, key rune) []rune {
-	var newKeyFindOrder []rune
-	newKeyFindOrder = append(newKeyFindOrder, keyFindOrder...)
-	newKeyFindOrder = append(newKeyFindOrder, key)
-	return newKeyFindOrder
-}
-
-type reachableKey struct {
-	key   rune
-	coord Coordinate
-	steps int
-}
-
-func reachableKeys(tunnelMap map[Coordinate]rune, start Coordinate, keysFound map[rune]bool) []reachableKey {
-	var reachableKeys []reachableKey
-
-	type coordSteps struct {
-		coordinate Coordinate
-		steps      int
-	}
-
-	toVisit := []coordSteps{
-		{start, 0},
-	}
-	visited := map[Coordinate]bool{
-		start: true,
-	}
-	for len(toVisit) > 0 {
-		visiting := toVisit[0]
-		toVisit = toVisit[1:]
-
-		for _, neighbor := range visiting.coordinate.Neighbors() {
-			valAtNeighbor := tunnelMap[neighbor]
-			if visited[neighbor] {
-				continue
-			}
-			if valAtNeighbor == '#' {
-				continue
-			}
-			if unicode.IsLower(valAtNeighbor) && !keysFound[valAtNeighbor] {
-				reachableKeys = append(reachableKeys, reachableKey{
-					key:   valAtNeighbor,
-					coord: neighbor,
-					steps: visiting.steps + 1,
-				})
-				continue
-			}
-			if unicode.IsUpper(valAtNeighbor) && !keysFound[unicode.ToLower(valAtNeighbor)] {
-				continue
-			}
-			visited[neighbor] = true
-			toVisit = append(toVisit, coordSteps{neighbor, visiting.steps + 1})
-		}
-	}
-
-	return reachableKeys
+func hasRequiredKeys(keysPossessed, keysNeeded int) bool {
+	return keysPossessed&keysNeeded == keysNeeded
 }
 
 func main() {
