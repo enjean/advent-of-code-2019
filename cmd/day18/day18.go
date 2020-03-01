@@ -1,10 +1,11 @@
 package main
 
 import (
-	"container/heap"
 	"fmt"
+	"github.com/enjean/advent-of-code-2019/internal/adventutil"
 	. "github.com/enjean/advent-of-code-2019/internal/adventutil/coordinate"
 	"math"
+	"strings"
 	"unicode"
 )
 
@@ -63,76 +64,140 @@ func (pq *PriorityQueue) Pop() interface{} {
 }
 
 type adjacencyEntry struct {
-	key           int
 	steps         int
-	keysInBetween int
+	keysInBetween string
+}
+
+type adjacencyMatrix map[rune]map[rune]adjacencyEntry
+
+func (am adjacencyMatrix) distanceBetween(source, dest rune, keysPossessed string) int {
+	entry := am[source][dest]
+	if hasRequiredKeys(keysPossessed, entry.keysInBetween) {
+		return entry.steps
+	}
+	return adventutil.MaxInt
 }
 
 func MinStepsToFindAllKeys(tunnelMap map[Coordinate]rune) int {
 
-	var pq PriorityQueue
-	foundAllVal := 0
-	adjacencyMatrix := make(map[int][]adjacencyEntry)
+	var keys []rune
+	adjacencyMatrix := make(adjacencyMatrix)
 	for coord, val := range tunnelMap {
 		if val == '@' {
-			adjacencyMatrix[0] = buildAdjacencyEntries(coord, 0, tunnelMap)
-			heap.Push(&pq, &searchState{
-				key:       0,
-				keysFound: 0,
-				steps:     0,
-			})
+			adjacencyMatrix[0] = buildAdjacencyEntries(coord, tunnelMap)
+
 		}
 		if unicode.IsLower(val) {
-			key := keyAsIntExpr(val)
-			foundAllVal += key
-			adjacencyMatrix[key] = buildAdjacencyEntries(coord, key, tunnelMap)
+			keys = append(keys, val)
+			adjacencyMatrix[val] = buildAdjacencyEntries(coord, tunnelMap)
 		}
 	}
 
-	//for key, entries := range adjacencyMatrix {
-	//	fmt.Println(string(key) + ":")
-	//	for _, entry := range entries {
-	//		fmt.Printf("  %s %d %d\n", string(entry.key), entry.steps, entry.keysInBetween)
-	//	}
-	//}
+	for key, entries := range adjacencyMatrix {
+		fmt.Println(string(key) + ":")
+		for target, entry := range entries {
+			fmt.Printf("  %s %d %s\n", string(target), entry.steps, entry.keysInBetween)
+		}
+	}
 
-	for {
-		processing := heap.Pop(&pq).(*searchState)
-		//fmt.Printf("%d\n", pq.Len())
-		fmt.Printf("Processing %d\n", processing.steps)
-		if processing.keysFound == foundAllVal {
-			return processing.steps
+	lastCalculations := make(map[rune]map[string]int)
+	for _, key := range keys {
+		lastCalculations[key] = make(map[string]int)
+		distanceBetween := adjacencyMatrix.distanceBetween(0, key, "")
+		lastCalculations[key][""] = distanceBetween
+		fmt.Printf("[%s, 0] = %d\n", string(key), distanceBetween)
+	}
+
+	for setSize := 1; setSize < len(keys); setSize++ {
+		temp := make(map[rune]map[string]int)
+		for _, key := range keys {
+			temp[key] = make(map[string]int)
 		}
 
-		//reachableKeys := reachableKeys(tunnelMap, processing.coordinate, processing.keysFound)
-		//fmt.Printf("Reachable keys = %v\n", reachableKeys)
-		for _, adjacencyEntry := range adjacencyMatrix[processing.key] {
-			if hasRequiredKeys(processing.keysFound, adjacencyEntry.key) {
-				// already have this key
-				continue
+		sets := setsOfSize(keys, setSize)
+		for _, set := range sets {
+			for _, key := range keys {
+				if strings.ContainsRune(set, key) {
+					continue
+				}
+				min := adventutil.MaxInt
+				for _, parent := range set {
+					parentToKey := adjacencyMatrix.distanceBetween(parent, key, set)
+					if parentToKey == adventutil.MaxInt {
+						continue
+					}
+					restOfSet := strings.Replace(set, string(parent), "", 1)
+					restOfSetToParent := lastCalculations[parent][restOfSet]
+					if restOfSetToParent == adventutil.MaxInt {
+						continue
+					}
+					distance := parentToKey + restOfSetToParent
+					if distance < min {
+						min = distance
+					}
+				}
+				//fmt.Printf("[%s, {%s}] = %d\n", string(key), set, min)
+				temp[key][set] = min
 			}
-			if hasRequiredKeys(processing.keysFound, adjacencyEntry.keysInBetween) {
-				heap.Push(&pq, &searchState{
-					key:       adjacencyEntry.key,
-					keysFound: processing.keysFound + adjacencyEntry.key,
-					steps:     processing.steps + adjacencyEntry.steps,
-				})
+		}
+		lastCalculations = temp
+	}
+
+	finalMin := adventutil.MaxInt
+	for _, valsForKey := range lastCalculations {
+		for _, valsForSet := range valsForKey {
+			if valsForSet < finalMin {
+				finalMin = valsForSet
 			}
 		}
 	}
+
+	return finalMin
 }
 
-func buildAdjacencyEntries(start Coordinate, startKeyExpr int, tunnelMap map[Coordinate]rune) []adjacencyEntry {
-	var adjacencyEntries []adjacencyEntry
+func setsOfSize(vals []rune, size int) []string {
+	// A temporary array to store all combination one by one
+	setSoFar := make([]rune, size)
+	var setsFound []string
+
+	// Print all combination using temprary
+	// array 'data[]'
+	setFindUtil(vals, size, setSoFar, 0, 0, &setsFound)
+	return setsFound
+}
+
+func setFindUtil(vals []rune, setSize int, setSoFar []rune, index, i int, setsFound *[]string) {
+	if index == setSize {
+		*setsFound = append(*setsFound, string(setSoFar))
+		return
+	}
+
+	// When no more elements are there to put in data[]
+	if i >= len(vals) {
+		return
+	}
+
+	// current is included, put next at next location
+	setSoFar[index] = vals[i]
+	setFindUtil(vals, setSize, setSoFar, index+1, i+1, setsFound)
+
+	// current is excluded, replace it with
+	// next (Note that i+1 is passed, but
+	// index is not changed)
+	setFindUtil(vals, setSize, setSoFar, index, i+1, setsFound)
+}
+
+func buildAdjacencyEntries(start Coordinate, tunnelMap map[Coordinate]rune) map[rune]adjacencyEntry {
+	adjacencyEntries := make(map[rune]adjacencyEntry)
 
 	type pathState struct {
 		coordinate    Coordinate
 		steps         int
-		keysInBetween int
+		keysInBetween string
 	}
 
 	toVisit := []pathState{
-		{start, 0, 0},
+		{start, 0, ""},
 	}
 	visited := map[Coordinate]bool{
 		start: true,
@@ -145,23 +210,22 @@ func buildAdjacencyEntries(start Coordinate, startKeyExpr int, tunnelMap map[Coo
 		keysToGetHere := visiting.keysInBetween
 
 		if visiting.steps != 0 && unicode.IsLower(val) {
-			keyVal := keyAsIntExpr(val)
+			//keyVal := keyAsIntExpr(val)
 			//pattern := fmt.Sprintf("^[%s]{%d}$", keysToGetHere, len(keysToGetHere))
-			adjacencyEntries = append(adjacencyEntries, adjacencyEntry{
-				key:           keyVal,
+			adjacencyEntries[val] = adjacencyEntry{
 				steps:         visiting.steps,
 				keysInBetween: keysToGetHere,
-			})
+			}
 
-			if !hasRequiredKeys(keysToGetHere, keyVal) {
-				keysToGetHere += keyVal
+			if !strings.ContainsRune(keysToGetHere, val) {
+				keysToGetHere += string(val)
 			}
 		}
 
 		if unicode.IsUpper(val) {
-			keyVal := keyAsIntExpr(unicode.ToLower(val))
-			if !hasRequiredKeys(keysToGetHere, keyVal) {
-				keysToGetHere += keyVal
+			keyVal := unicode.ToLower(val)
+			if !strings.ContainsRune(keysToGetHere, keyVal) {
+				keysToGetHere += string(keyVal)
 			}
 		}
 
@@ -186,10 +250,18 @@ func keyAsIntExpr(key rune) int {
 	return int(math.Pow(2, float64(key-'a')))
 }
 
-func hasRequiredKeys(keysPossessed, keysNeeded int) bool {
-	return keysPossessed&keysNeeded == keysNeeded
+func hasRequiredKeys(keysPossessed, keysNeeded string) bool {
+	for _, key := range keysNeeded {
+		if !strings.ContainsRune(keysPossessed, key) {
+			return false
+		}
+	}
+	return true
 }
 
 func main() {
+	tunnelMap := parseMap(adventutil.Parse(18))
 
+	part1 := MinStepsToFindAllKeys(tunnelMap)
+	fmt.Printf("Part 1: %d\n", part1)
 }

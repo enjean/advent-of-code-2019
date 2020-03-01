@@ -102,31 +102,54 @@ func TestKeyAsIntExpr(t *testing.T) {
 	}
 }
 
-func TestHasRequiredKeys(t *testing.T) {
-	toKeyExpr := func (s string) int {
-		result := 0
-		for _, r := range s {
-			result += keyAsIntExpr(r)
-		}
-		return result
+//func TestHasRequiredKeys(t *testing.T) {
+//	toKeyExpr := func (s string) int {
+//		result := 0
+//		for _, r := range s {
+//			result += keyAsIntExpr(r)
+//		}
+//		return result
+//	}
+//	tests := []struct {
+//		keysPossessed string
+//		keysNeeded string
+//		expected bool
+//	}{
+//		{"", "", true},
+//		{"", "a", false},
+//		{"a", "a", true},
+//		{"a", "b", false},
+//		{"ab", "de", false},
+//		{"ab", "ba", true},
+//		{"abcde", "ce", true},
+//	}
+//	for _, test := range tests {
+//		result := hasRequiredKeys(toKeyExpr(test.keysPossessed), toKeyExpr(test.keysNeeded))
+//		if result != test.expected {
+//			t.Errorf("hasRequiredKeys(%s, %s) expected %v got %v", test.keysPossessed, test.keysNeeded, test.expected, result)
+//		}
+//	}
+//}
+
+func TestSetsOfSize(t *testing.T) {
+	vals := []rune{'a','b', 'c'}
+	result := setsOfSize(vals, 2)
+	if len(result) != 3 {
+		t.Errorf("Expected three sets")
 	}
-	tests := []struct {
-		keysPossessed string
-		keysNeeded string
-		expected bool
-	}{
-		{"", "", true},
-		{"", "a", false},
-		{"a", "a", true},
-		{"a", "b", false},
-		{"ab", "de", false},
-		{"ab", "ba", true},
-		{"abcde", "ce", true},
-	}
-	for _, test := range tests {
-		result := hasRequiredKeys(toKeyExpr(test.keysPossessed), toKeyExpr(test.keysNeeded))
-		if result != test.expected {
-			t.Errorf("hasRequiredKeys(%s, %s) expected %v got %v", test.keysPossessed, test.keysNeeded, test.expected, result)
+	var hasAB, hasAC, hasBC bool
+	for _, set := range result {
+		if set == "ab" {
+			hasAB = true
 		}
+		if set == "ac" {
+			hasAC = true
+		}
+		if set == "bc" {
+			hasBC = true
+		}
+	}
+	if !(hasAB && hasAC && hasBC) {
+		t.Errorf("Missing an expected set")
 	}
 }
